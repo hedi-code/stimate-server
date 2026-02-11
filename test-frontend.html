@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stimate API Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .result-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .transcription {
+            color: #555;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .task-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .task-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .task-details {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .processing-time {
+            display: flex;
+            justify-content: space-around;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .time-item {
+            text-align: center;
+        }
+
+        .time-label {
+            font-size: 12px;
+            color: #666;
+            display: block;
+        }
+
+        .time-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .selected-file {
+            color: #667eea;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Stimate API Tester</h1>
+        <p class="subtitle">Upload an audio file to transcribe and extract construction tasks</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="file-icon">📁</div>
+            <p>Click to select an audio file or drag and drop here</p>
+            <p style="color: #999; font-size: 12px; margin-top: 8px;">Supported formats: MP3, MP4, WAV, M4A, WebM</p>
+            <input type="file" id="audioFile" accept="audio/*">
+            <div class="selected-file" id="selectedFile"></div>
+        </div>
+
+        <button id="transcribeBtn" disabled>Upload & Transcribe</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your audio file...</p>
+            <p style="font-size: 12px; color: #999; margin-top: 10px;">This may take a few seconds</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="result-section">
+                <h3>⏱️ Processing Time</h3>
+                <div class="processing-time" id="processingTime"></div>
+            </div>
+
+            <div class="result-section">
+                <h3>📝 Transcription</h3>
+                <p class="transcription" id="transcription"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>📋 Extracted Tasks</h3>
+                <div id="tasks"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const audioFile = document.getElementById('audioFile');
+        const transcribeBtn = document.getElementById('transcribeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        const selectedFile = document.getElementById('selectedFile');
+
+        // API endpoint - change this if your server runs on a different port
+        const API_URL = 'http://localhost:3000/api/transcribe';
+
+        // Click to select file
+        uploadArea.addEventListener('click', () => {
+            audioFile.click();
+        });
+
+        // File selection
+        audioFile.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file) {
+                selectedFile.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                transcribeBtn.disabled = false;
+            }
+        }
+
+        // Transcribe button
+        transcribeBtn.addEventListener('click', async () => {
+            const file = audioFile.files[0];
+            if (!file) return;
+
+            // Reset UI
+            error.classList.remove('active');
+            results.classList.remove('active');
+            loading.classList.add('active');
+            transcribeBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            try {
+                console.log('Sending request to:', API_URL);
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log('Response received:', data);
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Unknown error occurred');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showError(`Failed to connect to API: ${err.message}. Make sure the server is running on port 3000.`);
+            } finally {
+                loading.classList.remove('active');
+                transcribeBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            // Processing time
+            if (data.processingTime) {
+                document.getElementById('processingTime').innerHTML = `
+                    <div class="time-item">
+                        <span class="time-label">Transcription</span>
+                        <span class="time-value">${data.processingTime.transcription}</span>
+                    </div>
+                    <div class="time-item">
+                        <span class="time-label">Analysis</span>
+                        <span class="time-value">${data.processingTime.analysis}</span>
+                    </div>
+                    <div class="time-item">
+                        <span class="time-label">Total</span>
+                        <span class="time-value">${data.processingTime.total}</span>
+                    </div>
+                `;
+            }
+
+            // Transcription
+            document.getElementById('transcription').textContent = data.transcription;
+
+            // Tasks
+            const tasksContainer = document.getElementById('tasks');
+            if (data.tasks && data.tasks.length > 0) {
+                tasksContainer.innerHTML = data.tasks.map(task => `
+                    <div class="task-card">
+                        <div class="task-name">${task.task_name}</div>
+                        <div class="task-details">
+                            <strong>Room:</strong> ${task.room_name} |
+                            <strong>Quantity:</strong> ${task.quantity} ${task.unit || ''}
+                            ${task.description ? `<br><strong>Description:</strong> ${task.description}` : ''}
+                            ${task.hypotheses ? `<br><strong>Note:</strong> ${task.hypotheses}` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                tasksContainer.innerHTML = '<p style="color: #999;">No tasks extracted</p>';
+            }
+
+            results.classList.add('active');
+        }
+
+        function showError(message) {
+            error.textContent = `❌ ${message}`;
+            error.classList.add('active');
+        }
+    </script>
+</body>
+</html>
