@@ -59,8 +59,6 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
     const startTime = Date.now();
 
     try {
-        console.log("Tasks recieved", JSON.stringify(req.body.tasks))
-
         console.log("🎵 Audio file received:", {
             filename: req.file?.originalname,
             size: `${(req.file?.size / 1024).toFixed(2)} KB`,
@@ -303,7 +301,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT,'0,0,0,0', () => {
     console.log("\n🚀 ===================================");
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`🚀 Transcribe endpoint: POST http://localhost:${PORT}/api/transcribe`);
