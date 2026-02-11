@@ -19,6 +19,7 @@ const path = require("path");
 const OpenAI = require("openai");
 const cors = require("cors");
 const morgan = require("morgan");
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,7 +41,7 @@ const upload = multer({ storage: storage });
 
 // Initialize OpenAI client from environment variable
 const client = new OpenAI({
-    apiKey: "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",
+    apiKey: process.env.OPENAI_API_KEY,
 });
 
 // Middleware
