@@ -24,10 +24,17 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log("📁 Created uploads directory");
+}
+
 // Configure multer for file uploads with proper extension handling
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, "uploads/");
+        cb(null, uploadsDir);
     },
     filename: function (req, file, cb) {
         // Preserve the original extension
